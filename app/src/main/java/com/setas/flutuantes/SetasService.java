@@ -2,6 +2,7 @@ package com.setas.flutuantes;
 
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.GestureDescription;
+import android.content.Intent;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.util.DisplayMetrics;
@@ -31,14 +32,15 @@ public class SetasService extends AccessibilityService {
         int tam = (int) (72 * densidade);
 
         painel = new GridLayout(this);
-        painel.setRowCount(3);
+        painel.setRowCount(2);
         painel.setColumnCount(3);
 
+        adicionar(criarAlca(), 0, 0, tam);
         adicionar(criarSeta("\u2191", 0, -1), 0, 1, tam);
+        adicionar(criarFechar(), 0, 2, tam);
         adicionar(criarSeta("\u2190", -1, 0), 1, 0, tam);
-        adicionar(criarAlca(), 1, 1, tam);
+        adicionar(criarSeta("\u2193", 0, 1), 1, 1, tam);
         adicionar(criarSeta("\u2192", 1, 0), 1, 2, tam);
-        adicionar(criarSeta("\u2193", 0, 1), 2, 1, tam);
 
         lp = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -50,7 +52,7 @@ public class SetasService extends AccessibilityService {
         lp.gravity = Gravity.TOP | Gravity.START;
         lp.x = (int) (16 * densidade);
         lp.y = getResources().getDisplayMetrics().heightPixels
-                - (3 * tam) - (int) (100 * densidade);
+                - (2 * tam) - (int) (100 * densidade);
 
         wm.addView(painel, lp);
     }
@@ -81,6 +83,7 @@ public class SetasService extends AccessibilityService {
     private Button criarAlca() {
         Button b = new Button(this);
         b.setText("\u2725");
+        b.setTextSize(22);
         b.setPadding(0, 0, 0, 0);
         b.setAlpha(0.65f);
         b.setOnTouchListener((v, e) -> {
@@ -102,6 +105,22 @@ public class SetasService extends AccessibilityService {
         return b;
     }
 
+    private Button criarFechar() {
+        Button b = new Button(this);
+        b.setText("\u2715");
+        b.setTextSize(22);
+        b.setPadding(0, 0, 0, 0);
+        b.setAlpha(0.65f);
+        b.setOnTouchListener((v, e) -> {
+            if (e.getActionMasked() == MotionEvent.ACTION_UP) {
+                removerPainel();
+                disableSelf();
+            }
+            return true;
+        });
+        return b;
+    }
+
     private void deslizar(float dx, float dy) {
         DisplayMetrics m = getResources().getDisplayMetrics();
         float cx = m.widthPixels / 2f;
@@ -117,6 +136,16 @@ public class SetasService extends AccessibilityService {
         dispatchGesture(new GestureDescription.Builder().addStroke(traco).build(), null, null);
     }
 
+    private void removerPainel() {
+        if (painel != null && wm != null) {
+            try {
+                wm.removeView(painel);
+            } catch (Exception e) {
+            }
+            painel = null;
+        }
+    }
+
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
     }
@@ -126,11 +155,14 @@ public class SetasService extends AccessibilityService {
     }
 
     @Override
+    public boolean onUnbind(Intent intent) {
+        removerPainel();
+        return super.onUnbind(intent);
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
-        if (painel != null && wm != null) {
-            wm.removeView(painel);
-            painel = null;
-        }
+        removerPainel();
     }
 }
